@@ -9,6 +9,7 @@ import org.jetbrains.ktor.jetty.*
 import org.jetbrains.ktor.netty.*
 import org.jetbrains.ktor.response.*
 import org.jetbrains.ktor.routing.*
+import org.jetbrains.ktor.undertow.*
 import org.openjdk.jmh.annotations.*
 import org.slf4j.*
 import org.slf4j.Logger
@@ -137,6 +138,12 @@ open class JettyIntegrationBenchmark : IntegrationBenchmark() {
     }
 }
 
+open class UndertowIntegrationBenchmark : IntegrationBenchmark() {
+    override fun createServer(port: Int, main: Application.() -> Unit): ApplicationHost {
+        return embeddedServer(Undertow, port, module = main)
+    }
+}
+
 /*
 Benchmark                                        Mode  Cnt   Score   Error   Units
 JettyIntegrationBenchmark.jarfile               thrpt   20  15.788 ± 0.705  ops/ms
@@ -159,8 +166,9 @@ NettyIntegrationBenchmark.smallFileSync         thrpt   20  39.414 ± 1.668  ops
 fun main(args: Array<String>) {
     benchmark(args) {
         threads = 32
-        run<NettyIntegrationBenchmark>()
-        run<JettyIntegrationBenchmark>()
+        run<NettyIntegrationBenchmark>("sayOK")
+        run<JettyIntegrationBenchmark>("sayOK")
+        run<UndertowIntegrationBenchmark>("sayOK")
     }
 }
 
