@@ -1,5 +1,10 @@
 package org.jetbrains.ktor.pipeline
 
+@DslMarker
+@Target(*arrayOf(AnnotationTarget.CLASS, AnnotationTarget.TYPEALIAS))
+annotation class PipelineDslMarker
+
+@PipelineDslMarker
 class PipelineContext<TSubject : Any>(private val interceptors: List<PipelineInterceptor<TSubject>>, subject: TSubject) {
     var subject: TSubject = subject
         internal set

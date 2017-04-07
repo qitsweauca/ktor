@@ -10,6 +10,7 @@ import kotlin.reflect.*
 annotation class location(val path: String)
 
 fun Route.locations() = application.feature(Locations)
+fun ApplicationCall.locations() = application.feature(Locations)
 
 inline fun <reified T : Any> Route.location(noinline body: Route.() -> Unit): Route {
     return location(T::class, body)
@@ -28,7 +29,7 @@ inline fun <reified T : Any> Route.post(noinline body: suspend PipelineContext<A
         method(HttpMethod.Post) {
             handle {
                 val formPostData = call.request.receive<ValuesMap>()
-                body(this, locations().resolve(T::class, call.parameters + formPostData))
+                body(this, call.locations().resolve(T::class, call.parameters + formPostData))
             }
         }
     }
@@ -45,7 +46,7 @@ inline fun <reified T : Any> Route.handle(noinline body: suspend PipelineContext
 
 fun <T : Any> Route.handle(dataClass: KClass<T>, body: suspend PipelineContext<ApplicationCall>.(T) -> Unit) {
     handle {
-        val location = locations().resolve<T>(dataClass, call)
+        val location = call.locations().resolve<T>(dataClass, call)
         body(location)
     }
 }

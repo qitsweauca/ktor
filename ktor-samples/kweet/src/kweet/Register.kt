@@ -34,7 +34,7 @@ fun Route.register(dao: DAOFacade, hashFunction: (String) -> String) {
                     } else if (dao.userByEmail(it.email) != null) {
                         call.redirect(it.copy(error = "User with the following email ${it.email} is already registered", password = ""))
                     } else {
-                        application.log.error("Failed to register user", e)
+                        call.application.log.error("Failed to register user", e)
                         call.redirect(it.copy(error = "Failed to register", password = ""))
                     }
                 }

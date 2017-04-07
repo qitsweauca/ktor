@@ -31,7 +31,7 @@ fun Route.static(remotePath: String, configure: Route.() -> Unit) = route(remote
 fun Route.default(localPath: String) = default(File(localPath))
 fun Route.default(localPath: File) {
     get {
-        val file = staticRootFolder.combine(localPath)
+        val file = this@default.staticRootFolder.combine(localPath)
         if (file.isFile) {
             call.respond(LocalFileContent(file))
         }
@@ -41,7 +41,7 @@ fun Route.default(localPath: File) {
 fun Route.file(remotePath: String, localPath: String = remotePath) = file(remotePath, File(localPath))
 fun Route.file(remotePath: String, localPath: File) {
     get(remotePath) {
-        val file = staticRootFolder.combine(localPath)
+        val file = this@file.staticRootFolder.combine(localPath)
         if (file.isFile) {
             call.respond(LocalFileContent(file))
         }
@@ -52,7 +52,7 @@ fun Route.files(folder: String) = files(File(folder))
 fun Route.files(folder: File) {
     get("{$pathParameterName...}") {
         val relativePath = call.parameters.getAll(pathParameterName)?.joinToString(File.separator) ?: return@get
-        val file = staticRootFolder.combine(folder).combineSafe(relativePath)
+        val file = this@files.staticRootFolder.combine(folder).combineSafe(relativePath)
         if (file.isFile) {
             call.respond(LocalFileContent(file))
         }
@@ -74,7 +74,7 @@ private fun String?.combinePackage(resourcePackage: String?) = when {
 
 fun Route.resource(remotePath: String, relativePath: String = remotePath, resourcePackage: String? = null) {
     get(remotePath) {
-        val content = call.resolveResource(relativePath, staticBasePackage.combinePackage(resourcePackage))
+        val content = call.resolveResource(relativePath, this@resource.staticBasePackage.combinePackage(resourcePackage))
         if (content != null)
             call.respond(content)
     }
@@ -83,7 +83,7 @@ fun Route.resource(remotePath: String, relativePath: String = remotePath, resour
 fun Route.resources(resourcePackage: String? = null) {
     get("{$pathParameterName...}") {
         val relativePath = call.parameters.getAll(pathParameterName)?.joinToString(File.separator) ?: return@get
-        val content = call.resolveResource(relativePath, staticBasePackage.combinePackage(resourcePackage))
+        val content = call.resolveResource(relativePath, this@resources.staticBasePackage.combinePackage(resourcePackage))
         if (content != null)
             call.respond(content)
     }
@@ -91,7 +91,7 @@ fun Route.resources(resourcePackage: String? = null) {
 
 fun Route.defaultResource(relativePath: String, resourcePackage: String? = null) {
     get {
-        val content = call.resolveResource(relativePath, staticBasePackage.combinePackage(resourcePackage))
+        val content = call.resolveResource(relativePath, this@defaultResource.staticBasePackage.combinePackage(resourcePackage))
         if (content != null)
             call.respond(content)
     }

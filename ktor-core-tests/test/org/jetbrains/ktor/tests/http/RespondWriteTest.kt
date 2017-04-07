@@ -48,7 +48,7 @@ class RespondWriteTest {
             application.routing {
                 get("/") {
                     call.respondWrite {
-                        runAsync(application.executor) {
+                        runAsync(call.application.executor) {
                             write("OK")
                         }
                     }
