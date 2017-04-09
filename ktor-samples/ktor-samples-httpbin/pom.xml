@@ -19,11 +19,10 @@
         </resources>
     </build>
     <dependencies>
-        <!-- https://mvnrepository.com/artifact/com.squareup.moshi/moshi -->
         <dependency>
-            <groupId>com.squareup.moshi</groupId>
-            <artifactId>moshi</artifactId>
-            <version>1.4.0</version>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.7</version>
         </dependency>
 
         <dependency>
@@ -34,11 +33,6 @@
         <dependency>
             <groupId>org.jetbrains.ktor</groupId>
             <artifactId>ktor-auth</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jetbrains.ktor</groupId>
-            <artifactId>ktor-freemarker</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>
