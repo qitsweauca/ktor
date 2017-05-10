@@ -23,7 +23,7 @@ import java.util.zip.*
 import kotlin.concurrent.*
 import kotlin.test.*
 
-abstract class HostTestSuite<THost : ApplicationHost>(hostFactory: ApplicationHostFactory<THost>) : HostTestBase<THost>(hostFactory) {
+abstract class HostTestSuite<THost : ApplicationHost>(hostFactory: ApplicationHostFactory<THost>, ssl: Boolean = false) : HostTestBase<THost>(hostFactory, ssl) {
     @Test
     fun testTextContent() {
         createAndStartServer {
@@ -553,7 +553,7 @@ abstract class HostTestSuite<THost : ApplicationHost>(hostFactory: ApplicationHo
     }
 
     @Test
-    fun testMultipartFileUpload() {
+    open fun testMultipartFileUpload() {
         createAndStartServer {
             post("/") {
                 val response = StringBuilder()
@@ -962,7 +962,7 @@ abstract class HostTestSuite<THost : ApplicationHost>(hostFactory: ApplicationHo
             throw MultipleFailureException(errors)
         }
 
-        assertEquals(count * 2, completed.get())
+        assertEquals(count * if (ssl) 2 else 1, completed.get())
     }
 
     @Test

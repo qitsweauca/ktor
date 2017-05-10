@@ -14,7 +14,7 @@ import java.util.concurrent.*
 import javax.net.ssl.*
 import kotlin.concurrent.*
 
-abstract class HostTestBase<THost : ApplicationHost>(val applicationHostFactory: ApplicationHostFactory<THost>) {
+abstract class HostTestBase<THost : ApplicationHost>(val applicationHostFactory: ApplicationHostFactory<THost>, val ssl: Boolean = true) {
     protected val port = findFreePort()
     protected val sslPort = findFreePort()
     protected var server: THost? = null
@@ -38,9 +38,11 @@ abstract class HostTestBase<THost : ApplicationHost>(val applicationHostFactory:
             log?.let { this.log = it  }
             executor?.let { this.executor = it  }
             connector { port = _port }
-            sslConnector(keyStore, "mykey", { "changeit".toCharArray() }, { "changeit".toCharArray() }) {
-                this.port = sslPort
-                this.keyStorePath = keyStoreFile.absoluteFile
+            if (ssl) {
+                sslConnector(keyStore, "mykey", { "changeit".toCharArray() }, { "changeit".toCharArray() }) {
+                    this.port = sslPort
+                    this.keyStorePath = keyStoreFile.absoluteFile
+                }
             }
 
             module(module)
@@ -77,7 +79,9 @@ abstract class HostTestBase<THost : ApplicationHost>(val applicationHostFactory:
     protected fun findFreePort() = ServerSocket(0).use { it.localPort }
     protected fun withUrl(path: String, block: HttpURLConnection.(Int) -> Unit) {
         withUrl(URL("http://127.0.0.1:$port$path"), port, block)
-        withUrl(URL("https://127.0.0.1:$sslPort$path"), sslPort, block)
+        if (ssl) {
+            withUrl(URL("https://127.0.0.1:$sslPort$path"), sslPort, block)
+        }
     }
 
     protected fun withUrlHttp2(path: String, block: Unit.(Int) -> Unit) {
