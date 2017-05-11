@@ -1,22 +1,20 @@
 package org.jetbrains.ktor.asockets
 
+import kotlinx.coroutines.experimental.channels.Channel
 import kotlinx.http.server.*
-import kotlinx.sockets.*
 import org.jetbrains.ktor.application.*
 import org.jetbrains.ktor.cio.*
 import org.jetbrains.ktor.content.*
 import org.jetbrains.ktor.host.*
 import org.jetbrains.ktor.http.*
 import java.nio.*
-import java.util.concurrent.*
 
 class CApplicationCall(application: Application,
-                       _request: HttpRequest,
-                       private val socket: ReadWriteSocket,
-                       buffer: ByteBuffer,
-                       private val pool: BlockingQueue<ByteBuffer>
+                       val _request: HttpRequest,
+                       val _session: Session,
+                       private val pool: Channel<ByteBuffer>
                        ) : BaseApplicationCall(application) {
-    override val request = CApplicationRequest(this, _request, socket, buffer)
+    override val request = CApplicationRequest(this, _request, _session)
     override val response = CApplicationResponse(this)
 
     suspend override fun respondUpgrade(upgrade: FinalContent.ProtocolUpgrade) {
@@ -32,15 +30,15 @@ class CApplicationCall(application: Application,
         try {
             val responseContentLength = response.headers[HttpHeaders.ContentLength]?.toLong()
             responseChannel = when {
-                responseContentLength != null -> DirectResponseWriteChannel(responseContentLength, socket)
-                else -> ChunkedResponseWriteChannel(buffer, socket)
+                responseContentLength != null -> _session.directOutput(responseContentLength).forKtor
+                else -> _session.chunkedOutput().forKtor
             }
 
             if (responseContentLength == null && HttpHeaders.TransferEncoding !in response.headers) {
                 response.headers.append(HttpHeaders.TransferEncoding, "chunked")
             }
 
-            response.render(buffer, socket)
+            response.render()
 
             // TODO need to be reused instead
             return when (content) {

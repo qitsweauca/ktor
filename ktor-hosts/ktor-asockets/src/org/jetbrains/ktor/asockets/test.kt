@@ -8,7 +8,7 @@ import org.jetbrains.ktor.host.*
 import org.jetbrains.ktor.routing.*
 
 fun main(args: Array<String>) {
-    embeddedServer(CApplicationHost.Factory, port = 9094) {
+    embeddedServer(CApplicationHost.Factory, port = 8080) {
 //        install(CallLogging)
         install(DefaultHeaders)
 
