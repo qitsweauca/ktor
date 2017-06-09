@@ -33,7 +33,8 @@ sealed class FinalContent {
                                      output: WriteChannel,
                                      channel: Closeable,
                                      hostContext: CoroutineContext,
-                                     userAppContext: CoroutineContext): Closeable
+                                     userAppContext: CoroutineContext,
+                                     pool: ByteBufferPool): Closeable
     }
 }
 

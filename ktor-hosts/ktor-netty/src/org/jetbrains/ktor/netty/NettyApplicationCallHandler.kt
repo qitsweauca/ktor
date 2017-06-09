@@ -12,10 +12,6 @@ internal class NettyApplicationCallHandler(private val host: NettyApplicationHos
     }
 
     object Dispatcher : CoroutineDispatcher() {
-        override fun isDispatchNeeded(context: CoroutineContext): Boolean {
-            return !context[CurrentContextKey]!!.context.executor().inEventLoop()
-        }
-
         override fun dispatch(context: CoroutineContext, block: Runnable) {
             val nettyContext = context[CurrentContextKey]!!.context
             nettyContext.executor().execute(block)

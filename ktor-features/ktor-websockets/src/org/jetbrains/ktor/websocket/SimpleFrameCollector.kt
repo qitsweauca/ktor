@@ -1,10 +1,13 @@
 package org.jetbrains.ktor.websocket
 
+import org.jetbrains.ktor.cio.*
 import org.jetbrains.ktor.util.*
+import java.io.*
 import java.nio.*
 
-internal class SimpleFrameCollector {
+internal class SimpleFrameCollector(val pool: ByteBufferPool): Closeable {
     private var remaining: Int = 0
+    private var ticket: PoolTicket? = null
     private var buffer: ByteBuffer? = null
     private val maskBuffer = ByteBuffer.allocate(4)
 
@@ -16,8 +19,12 @@ internal class SimpleFrameCollector {
 
         remaining = length
         if (buffer == null || buffer!!.capacity() < length) {
-            buffer = ByteBuffer.allocate(length)
+            disposeTicket()
+            val newTicket = pool.allocate(length)
+            ticket = newTicket
+            buffer = newTicket.buffer
         }
+        
         buffer!!.clear()
 
         handle(bb)
@@ -42,5 +49,17 @@ internal class SimpleFrameCollector {
 
         buffer = null
         view.asReadOnlyBuffer()
+    }
+
+    override fun close() {
+        disposeTicket()
+    }
+
+    private fun disposeTicket() {
+        ticket?.let {
+            pool.release(it)
+            buffer = null
+            ticket = null
+        }
     }
 }

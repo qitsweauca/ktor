@@ -87,7 +87,7 @@ internal class NettyApplicationCall(application: Application,
                     upgrade.upgrade(HttpContentReadChannel(upgradeContentQueue.queue, buffered = false), responseChannel(), Closeable {
                         context.channel().close().get()
                         upgradeContentQueue.close()
-                    }, context.channel().eventLoop().asCoroutineDispatcher(), userAppContext)
+                    }, context.channel().eventLoop().asCoroutineDispatcher(), userAppContext, bufferPool)
                     context.read()
                 }
             } ?: throw IllegalStateException("Response has been already sent")

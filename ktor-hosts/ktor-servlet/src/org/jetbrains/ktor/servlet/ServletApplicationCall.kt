@@ -38,7 +38,7 @@ open class ServletApplicationCall(application: Application,
 
         servletResponse.flushBuffer()
         val handler = servletRequest.upgrade(ServletUpgradeHandler::class.java)
-        handler.up = UpgradeRequest(servletResponse, this@ServletApplicationCall, upgrade, hostContext, userAppContext)
+        handler.up = UpgradeRequest(servletResponse, this@ServletApplicationCall, upgrade, hostContext, userAppContext, bufferPool)
 
 //        servletResponse.flushBuffer()
 
@@ -47,7 +47,7 @@ open class ServletApplicationCall(application: Application,
     }
 
     private val responseChannel = lazy {
-        ServletWriteChannel(servletResponse.outputStream)
+        ServletWriteChannel(servletResponse.outputStream, bufferPool)
     }
 
     override suspend fun responseChannel(): WriteChannel = responseChannelOverride ?: responseChannel.value
@@ -75,7 +75,8 @@ open class ServletApplicationCall(application: Application,
                          val call: ServletApplicationCall,
                          val upgradeMessage: FinalContent.ProtocolUpgrade,
                          val hostContext: CoroutineContext,
-                         val userAppContext: CoroutineContext)
+                         val userAppContext: CoroutineContext,
+                         val pool: ByteBufferPool)
 
     class ServletUpgradeHandler : HttpUpgradeHandler {
         @Volatile
@@ -88,7 +89,7 @@ open class ServletApplicationCall(application: Application,
             val call = up.call
 
             val inputChannel = ServletReadChannel(wc.inputStream)
-            val outputChannel = ServletWriteChannel(wc.outputStream)
+            val outputChannel = ServletWriteChannel(wc.outputStream, up.pool)
 
             up.call.requestChannelOverride = inputChannel
             up.call.responseChannelOverride = outputChannel
@@ -96,7 +97,7 @@ open class ServletApplicationCall(application: Application,
             runBlocking {
                 up.upgradeMessage.upgrade(inputChannel, outputChannel, Closeable {
                     wc.close()
-                }, up.hostContext, up.userAppContext)
+                }, up.hostContext, up.userAppContext, up.pool)
             }
         }
 

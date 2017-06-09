@@ -28,16 +28,17 @@ internal class WebSocketWriter(val writeChannel: WriteChannel, ctx: CoroutineCon
     }
 
     suspend fun ActorScope<Any>.writeLoop(buffer: ByteBuffer) {
-        val serializer = Serializer()
         buffer.clear()
 
-        for (msg in this) {
-            if (msg is Frame) {
-                serializer.enqueue(msg)
-                if (drainQueueAndSerialize(serializer, buffer, msg is Frame.Close)) break
-            } else if (msg is FlushRequest) {
-                msg.complete() // we don't need writeChannel.flush() here as we do flush at end of every drainQueueAndSerialize
-            } else throw IllegalArgumentException("unknown message $msg")
+        Serializer(pool).use { serializer ->
+            for (msg in this) {
+                if (msg is Frame) {
+                    serializer.enqueue(msg)
+                    if (drainQueueAndSerialize(serializer, buffer, msg is Frame.Close)) break
+                } else if (msg is FlushRequest) {
+                    msg.complete() // we don't need writeChannel.flush() here as we do flush at end of every drainQueueAndSerialize
+                } else throw IllegalArgumentException("unknown message $msg")
+            }
         }
 
         close()

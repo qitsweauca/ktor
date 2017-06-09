@@ -9,7 +9,7 @@ import kotlin.coroutines.experimental.*
 internal class WebSocketReader(val byteChannel: ReadChannel, val maxFrameSize: () -> Long, val ctx: CoroutineContext, pool: ByteBufferPool) {
     private var state = State.HEADER
     private val frameParser = FrameParser()
-    private val collector = SimpleFrameCollector()
+    private val collector = SimpleFrameCollector(pool)
 
     private val queue by lazy {
         produce(ctx, capacity = 8) { // lazy - workaround for missing produce(start = false)
@@ -19,6 +19,7 @@ internal class WebSocketReader(val byteChannel: ReadChannel, val maxFrameSize: (
             } catch (expected: ClosedChannelException) {
             } finally {
                 pool.release(ticket)
+                collector.close()
             }
         }
     }

@@ -9,7 +9,7 @@ import javax.servlet.*
 import kotlin.coroutines.experimental.*
 import kotlin.coroutines.experimental.intrinsics.*
 
-internal class ServletWriteChannel(val servletOutputStream: ServletOutputStream) : WriteChannel {
+internal class ServletWriteChannel(val servletOutputStream: ServletOutputStream, val heapBufferPool: ByteBufferPool) : WriteChannel {
     @Volatile
     private var listenerInstalled = 0
 
@@ -17,11 +17,22 @@ internal class ServletWriteChannel(val servletOutputStream: ServletOutputStream)
     private var currentHandler: Continuation<Unit>? = null
 
     private var bytesWrittenWithNoSuspend = 0L
-    private var heapBuffer: ByteBuffer? = null
+    private var heapBuffer: PoolTicket? = null
 
     companion object {
         const val MaxChunkWithoutSuspension = 100 * 1024 * 1024 // 100K
         private val listenerInstalledUpdater = AtomicIntegerFieldUpdater.newUpdater(ServletWriteChannel::class.java, "listenerInstalled")
+
+        private val ClosedContinuation = object : Continuation<Unit> {
+            override val context: CoroutineContext
+                get() = EmptyCoroutineContext
+
+            override fun resume(value: Unit) {
+            }
+
+            override fun resumeWithException(exception: Throwable) {
+            }
+        }
     }
 
     private val writeReadyListener = object : WriteListener {
@@ -96,19 +107,31 @@ internal class ServletWriteChannel(val servletOutputStream: ServletOutputStream)
         val size = src.remaining()
 
         if (src.hasArray()) {
-            write0(src, size)
+            writeHeapBuffer(src, size)
         } else {
-            val copy = heapBuffer?.takeIf { it.capacity() >= size } ?: ByteBuffer.allocate(size)!!.also { heapBuffer = it }
-            copy.clear()
-            copy.put(src)
+            val t = heapBuffer.let { t ->
+                if (t != null && t.buffer.capacity() >= size) {
+                    t
+                } else {
+                    if (t != null) heapBufferPool.release(t)
 
-            write0(copy, size)
+                    heapBufferPool.allocate(size).also { heapBuffer = it }
+                }
+            }
+
+            with(t.buffer) {
+                clear()
+                put(src)
+                flip()
+
+                writeHeapBuffer(this, size)
+            }
         }
 
         return size
     }
 
-    private fun ServletOutputStream.write0(src: ByteBuffer, size: Int) {
+    private fun ServletOutputStream.writeHeapBuffer(src: ByteBuffer, size: Int) {
         write(src.array(), src.arrayOffset() + src.position(), size)
         src.position(src.position() + size)
     }
