@@ -22,7 +22,7 @@ class NettyApplicationHost(environment: ApplicationHostEnvironment) : BaseApplic
         ServerBootstrap().apply {
             group(connectionEventGroup, workerEventGroup)
             channel(NioServerSocketChannel::class.java)
-            childHandler(NettyChannelInitializer(this@NettyApplicationHost, connector))
+            childHandler(NettyChannelInitializer(this@NettyApplicationHost, connector, environment))
         }
     }
 

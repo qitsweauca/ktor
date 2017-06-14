@@ -17,7 +17,8 @@ internal class NettyApplicationCall(application: Application,
                                     val context: ChannelHandlerContext,
                                     val httpRequest: HttpRequest,
                                     contentQueue: NettyContentQueue,
-                                    val userAppContext: CoroutineContext) : BaseApplicationCall(application) {
+                                    val userAppContext: CoroutineContext,
+                                    override val bufferPool: ByteBufferPool) : BaseApplicationCall(application) {
 
     var completed: Boolean = false
 
@@ -25,7 +26,6 @@ internal class NettyApplicationCall(application: Application,
 
     override val request = NettyApplicationRequest(this, httpRequest, NettyConnectionPoint(httpRequest, context), contentQueue)
     override val response = NettyApplicationResponse(this, context)
-    override val bufferPool = NettyByteBufferPool(context)
 
     suspend override fun respond(message: Any) {
         super.respond(message)

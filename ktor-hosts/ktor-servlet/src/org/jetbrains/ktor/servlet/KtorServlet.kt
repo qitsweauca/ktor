@@ -17,6 +17,7 @@ abstract class KtorServlet : HttpServlet() {
 
     abstract val application: Application
     abstract val hostPipeline: HostPipeline
+    abstract val pool: ByteBufferPool
 
     override fun destroy() {
         super.destroy()
@@ -39,7 +40,7 @@ abstract class KtorServlet : HttpServlet() {
             val asyncContext = request.startAsync().apply {
                 timeout = 0L
             }
-            val call = ServletApplicationCall(application, request, response, NoPool, { call, block, next ->
+            val call = ServletApplicationCall(application, request, response, pool, { call, block, next ->
                 tryPush(request, call, block, next)
             }, hostDispatcher, userAppContext = dispatcher)
 

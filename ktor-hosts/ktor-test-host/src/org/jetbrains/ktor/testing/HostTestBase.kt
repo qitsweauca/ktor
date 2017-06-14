@@ -1,6 +1,7 @@
 package org.jetbrains.ktor.testing
 
 import org.jetbrains.ktor.application.*
+import org.jetbrains.ktor.cio.*
 import org.jetbrains.ktor.host.*
 import org.jetbrains.ktor.logging.*
 import org.jetbrains.ktor.routing.*
@@ -19,6 +20,8 @@ abstract class HostTestBase<THost : ApplicationHost>(val applicationHostFactory:
     protected val sslPort = findFreePort()
     protected var server: THost? = null
 
+    protected val pool = TrackingByteBufferPool(SLF4JApplicationLog("POOL"))
+
     val testLog: Logger = LoggerFactory.getLogger("HostTestBase")
 
     @Before
@@ -30,6 +33,11 @@ abstract class HostTestBase<THost : ApplicationHost>(val applicationHostFactory:
     fun tearDownBase() {
         testLog.trace("Disposing server on port $port (SSL $sslPort)")
         (server as? ApplicationHost)?.stop(100, 5000, TimeUnit.MILLISECONDS)
+
+        System.gc()
+        Thread.sleep(100)
+
+        pool.assertEverythingCollected()
     }
 
     protected open fun createServer(log: ApplicationLog?, module: Application.() -> Unit): THost {
@@ -43,6 +51,8 @@ abstract class HostTestBase<THost : ApplicationHost>(val applicationHostFactory:
             }
 
             module(module)
+
+            pool = this@HostTestBase.pool
         }
         return embeddedServer(applicationHostFactory, environment)
     }

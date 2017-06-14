@@ -16,7 +16,7 @@ fun ByteBuffer.getString(charset: Charset = Charsets.UTF_8) = charset.decode(thi
 
 fun ByteBuffer.copy(newSize: Int = remaining()): ByteBuffer = ByteBuffer.allocate(newSize).apply { this@copy.slice().putTo(this@apply); clear() }
 
-fun ByteBuffer.copy(pool: ByteBufferPool, newSize: Int = remaining()): PoolTicket = pool.allocate(newSize).apply { buffer.clear(); this@copy.slice().putTo(buffer); flip() }
+fun ByteBuffer.copy(pool: ByteBufferPool, newSize: Int = remaining()): PoolTicket = pool.allocate(newSize).apply { buffer.clear(); this@copy.slice().putTo(buffer); buffer.flip() }
 
 fun buildByteBuffer(order: ByteOrder = ByteOrder.BIG_ENDIAN, block: ByteBufferBuilder.() -> Unit) = ByteBufferBuilder(order).apply { block() }.build()
 

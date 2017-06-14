@@ -1,12 +1,13 @@
 package org.jetbrains.ktor.websocket
 
+import kotlinx.coroutines.experimental.*
 import kotlinx.coroutines.experimental.channels.*
 import org.jetbrains.ktor.cio.*
 import java.nio.*
 import java.nio.channels.*
 import kotlin.coroutines.experimental.*
 
-internal class WebSocketReader(val byteChannel: ReadChannel, val maxFrameSize: () -> Long, val ctx: CoroutineContext, pool: ByteBufferPool) {
+internal class WebSocketReader(private val byteChannel: ReadChannel, val maxFrameSize: () -> Long, val ctx: CoroutineContext, pool: ByteBufferPool) {
     private var state = State.HEADER
     private val frameParser = FrameParser()
     private val collector = SimpleFrameCollector(pool)
@@ -80,7 +81,12 @@ internal class WebSocketReader(val byteChannel: ReadChannel, val maxFrameSize: (
     private suspend fun ProducerScope<Frame>.handleFrameIfProduced() {
         if (!collector.hasRemaining) {
             state = State.HEADER
-            send(Frame.byType(frameParser.fin, frameParser.frameType, collector.take(frameParser.maskKey)))
+            val ticket = collector.take(frameParser.maskKey)
+            send(Frame.byType(frameParser.fin, frameParser.frameType, ticket.buffer, object: DisposableHandle {
+                override fun dispose() {
+                    collector.pool.release(ticket)
+                }
+            }))
             frameParser.bodyComplete()
         }
     }

@@ -1,6 +1,7 @@
 package org.jetbrains.ktor.host
 
 import org.jetbrains.ktor.application.*
+import org.jetbrains.ktor.cio.*
 import org.jetbrains.ktor.config.*
 import org.jetbrains.ktor.logging.*
 import org.jetbrains.ktor.util.*
@@ -11,7 +12,6 @@ import java.nio.file.*
 import java.nio.file.StandardWatchEventKinds.*
 import java.nio.file.attribute.*
 import java.util.*
-import java.util.concurrent.*
 import java.util.concurrent.locks.*
 import kotlin.concurrent.*
 import kotlin.reflect.*
@@ -29,7 +29,8 @@ class ApplicationHostEnvironmentReloading(
         override val config: ApplicationConfig,
         override val connectors: List<HostConnectorConfig>,
         val modules: List<Application.() -> Unit>,
-        val reloadPackages: List<String> = emptyList()
+        val reloadPackages: List<String> = emptyList(),
+        override val pool: ByteBufferPool? = null
 )
     : ApplicationHostEnvironment {
 

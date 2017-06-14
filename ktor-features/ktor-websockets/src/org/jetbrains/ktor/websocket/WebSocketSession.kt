@@ -77,3 +77,7 @@ suspend fun WebSocketSession.close(reason: CloseReason) {
     send(Frame.Close(reason))
     flush()
 }
+
+suspend fun WebSocketSession.awaitForEnd() {
+    incoming.consumeEach { it.release() }
+}

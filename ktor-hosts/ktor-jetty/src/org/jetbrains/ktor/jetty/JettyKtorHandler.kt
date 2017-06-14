@@ -71,7 +71,7 @@ internal class JettyKtorHandler(val environment: ApplicationHostEnvironment, val
 
     private class Ticket(bb: ByteBuffer) : ReleasablePoolTicket(bb)
 
-    private val byteBufferPool = object : ByteBufferPool {
+    private val byteBufferPool = environment.pool ?: object : ByteBufferPool {
         val jbp = MappedByteBufferPool(16)
 
         override fun allocate(size: Int) = Ticket(jbp.acquire(size, false).apply { clear() })

@@ -957,7 +957,7 @@ abstract class HostTestSuite<THost : ApplicationHost>(hostFactory: ApplicationHo
         }
     }
 
-    @Test(timeout = 30000L)
+    @Test(timeout = 130000L)
     fun testBlockingConcurrency() {
         val completed = AtomicInteger(0)
         createAndStartServer {

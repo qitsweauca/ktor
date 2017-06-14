@@ -12,7 +12,7 @@ import org.jetbrains.ktor.netty.http2.*
 import java.security.*
 import java.security.cert.*
 
-class NettyChannelInitializer(val host: NettyApplicationHost, val connector: HostConnectorConfig) : ChannelInitializer<SocketChannel>() {
+class NettyChannelInitializer(val host: NettyApplicationHost, val connector: HostConnectorConfig, val env: ApplicationHostEnvironment) : ChannelInitializer<SocketChannel>() {
     private var sslContext: SslContext? = null
 
     init {
@@ -65,6 +65,8 @@ class NettyChannelInitializer(val host: NettyApplicationHost, val connector: Hos
     }
 
     fun configurePipeline(pipeline: ChannelPipeline, protocol: String) {
+        val pool = env.pool ?: NettyByteBufferPool(pipeline.channel().alloc())
+
         when (protocol) {
             ApplicationProtocolNames.HTTP_2 -> {
                 val connection = DefaultHttp2Connection(true)
@@ -75,13 +77,13 @@ class NettyChannelInitializer(val host: NettyApplicationHost, val connector: Hos
                 val decoder = DefaultHttp2ConnectionDecoder(connection, encoder, reader)
 
                 pipeline.addLast(HostHttp2Handler(encoder, decoder, Http2Settings()))
-                pipeline.addLast(Multiplexer(pipeline.channel(), NettyHostHttp2Handler(host, connection, host.pipeline)))
+                pipeline.addLast(Multiplexer(pipeline.channel(), NettyHostHttp2Handler(host, connection, host.pipeline, pool)))
             }
             ApplicationProtocolNames.HTTP_1_1 -> {
                 with(pipeline) {
                     addLast("codec", HttpServerCodec())
                     addLast("timeout", WriteTimeoutHandler(10))
-                    addLast("http1", NettyHostHttp1Handler(host))
+                    addLast("http1", NettyHostHttp1Handler(host, pool))
                 }
             }
             else -> {

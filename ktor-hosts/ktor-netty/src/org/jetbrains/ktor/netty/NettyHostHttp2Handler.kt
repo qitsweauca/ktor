@@ -5,12 +5,13 @@ import io.netty.handler.codec.http2.*
 import io.netty.util.*
 import io.netty.util.collection.*
 import org.jetbrains.ktor.application.*
+import org.jetbrains.ktor.cio.*
 import org.jetbrains.ktor.host.*
 import org.jetbrains.ktor.netty.http2.*
 import org.jetbrains.ktor.pipeline.*
 
 @ChannelHandler.Sharable
-class NettyHostHttp2Handler(private val host: NettyApplicationHost, private val http2: Http2Connection?, private val hostPipeline: HostPipeline) : ChannelInboundHandlerAdapter() {
+class NettyHostHttp2Handler(private val host: NettyApplicationHost, private val http2: Http2Connection?, private val hostPipeline: HostPipeline, val pool: ByteBufferPool) : ChannelInboundHandlerAdapter() {
     override fun channelRead(context: ChannelHandlerContext, message: Any?) {
         when (message) {
             is Http2HeadersFrame -> {
@@ -33,7 +34,7 @@ class NettyHostHttp2Handler(private val host: NettyApplicationHost, private val 
     }
 
     private fun startHttp2(context: ChannelHandlerContext, streamId: Int, headers: Http2Headers, http2: Http2Connection) {
-        val call = NettyHttp2ApplicationCall(host.application, context, streamId, headers, this, http2)
+        val call = NettyHttp2ApplicationCall(host.application, context, streamId, headers, this, http2, pool)
         context.callByStreamId[streamId] = call
         context.executeCall(call)
     }

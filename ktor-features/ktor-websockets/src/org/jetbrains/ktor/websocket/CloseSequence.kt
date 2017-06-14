@@ -21,11 +21,13 @@ fun closeSequence(ctx: CoroutineContext, w: WebSocketSession, timeout: () -> Dur
 
                         while (true) {
                             val event = receiveOrNull() ?: break
+                            event.frame.release()
                             if (event !is CloseFrameEvent.ToSend) break
                         }
                     }
 
                     is CloseFrameEvent.Received -> {
+                        firstCloseEvent.frame.release()
                         w.send(Frame.Close(reason ?: CloseReason(CloseReason.Codes.NORMAL, "OK")))
                         w.flush()
                     }

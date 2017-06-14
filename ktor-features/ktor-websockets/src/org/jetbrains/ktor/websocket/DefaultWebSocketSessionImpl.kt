@@ -40,7 +40,7 @@ internal class DefaultWebSocketSessionImpl(val raw: WebSocketSession,
                 raw.incoming.consumeEach { frame ->
                     when (frame) {
                         is Frame.Close -> closeSequence.send(CloseFrameEvent.Received(frame))
-                        is Frame.Pong -> pinger.get()?.send(frame)
+                        is Frame.Pong -> pinger.get()?.send(frame) ?: frame.release()
                         is Frame.Ping -> ponger.send(frame)
                         else -> filtered.send(frame)
                     }
@@ -69,7 +69,7 @@ internal class DefaultWebSocketSessionImpl(val raw: WebSocketSession,
                 else -> CloseReason(CloseReason.Codes.UNEXPECTED_CONDITION, t.message ?: t.javaClass.name)
             }
 
-            if (reason != null) {
+            if (reason != null && t != null) {
                 application.log.error("Websocket handler failed", t)
             }
 
@@ -87,7 +87,16 @@ internal class DefaultWebSocketSessionImpl(val raw: WebSocketSession,
             closeSequence.join()
         } finally {
             cancelPinger()
-            raw.terminate()
+            try {
+                raw.terminate()
+            } finally {
+                try {
+                    do {
+                        filtered.poll()?.release() ?: break
+                    } while (true)
+                } catch (ignore: CancellationException) {
+                }
+            }
         }
     }
 

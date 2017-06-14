@@ -48,8 +48,8 @@ internal class SimpleFrameCollector(val pool: ByteBufferPool): Closeable {
         }
 
         buffer = null
-        view.asReadOnlyBuffer()
-    }
+        view
+    }.copy(pool)
 
     override fun close() {
         disposeTicket()

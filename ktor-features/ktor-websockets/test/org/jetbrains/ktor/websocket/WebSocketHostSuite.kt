@@ -1,5 +1,6 @@
 package org.jetbrains.ktor.websocket
 
+import kotlinx.coroutines.experimental.*
 import kotlinx.coroutines.experimental.channels.*
 import org.jetbrains.ktor.application.*
 import org.jetbrains.ktor.host.*
@@ -33,6 +34,7 @@ abstract class WebSocketHostSuite<THost : ApplicationHost>(hostFactory: Applicat
                     if (frame is Frame.Text) {
                         collected.add(frame.readText())
                     }
+                    frame.release()
                 }
             }
         }
@@ -90,8 +92,7 @@ abstract class WebSocketHostSuite<THost : ApplicationHost>(hostFactory: Applicat
                     timeout = Duration.ofSeconds(120)
                     pingInterval = Duration.ofMillis(50)
 
-                    incoming.consumeEach {
-                    }
+                    awaitForEnd()
                 }
             }
         }
@@ -164,6 +165,7 @@ abstract class WebSocketHostSuite<THost : ApplicationHost>(hostFactory: Applicat
                         if (frame is Frame.Text) {
                             collected.add(frame.readText())
                         }
+                        frame.release()
                     }
                 } catch (t: Throwable) {
                     collected.put(t.toString())
@@ -323,7 +325,7 @@ abstract class WebSocketHostSuite<THost : ApplicationHost>(hostFactory: Applicat
         // so if we fail here it is likely we have encoded frame wrong or stream is broken
 
         val bytes = readFully(length.toInt())
-        return Frame.byType(fin, frameType, ByteBuffer.wrap(bytes))
+        return Frame.byType(fin, frameType, ByteBuffer.wrap(bytes), NonDisposableHandle)
     }
 
     private fun InputStream.parseStatus(): HttpStatusCode {

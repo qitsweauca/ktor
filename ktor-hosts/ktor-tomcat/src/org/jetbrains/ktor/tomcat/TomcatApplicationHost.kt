@@ -8,6 +8,7 @@ import org.apache.tomcat.util.net.*
 import org.apache.tomcat.util.net.jsse.*
 import org.apache.tomcat.util.net.openssl.*
 import org.jetbrains.ktor.application.*
+import org.jetbrains.ktor.cio.*
 import org.jetbrains.ktor.host.*
 import org.jetbrains.ktor.servlet.*
 import java.nio.file.*
@@ -22,6 +23,8 @@ class TomcatApplicationHost(environment: ApplicationHostEnvironment) : BaseAppli
             get() = this@TomcatApplicationHost.pipeline
         override val application: Application
             get() = this@TomcatApplicationHost.application
+        override val pool: ByteBufferPool
+            get() = environment.pool ?: NoPool
     }
 
     val server = Tomcat().apply {

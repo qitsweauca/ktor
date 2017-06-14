@@ -2,6 +2,7 @@ package org.jetbrains.ktor.websocket
 
 import kotlinx.coroutines.experimental.channels.*
 import org.jetbrains.ktor.application.*
+import org.jetbrains.ktor.cio.*
 import org.jetbrains.ktor.routing.*
 import org.jetbrains.ktor.testing.*
 import org.jetbrains.ktor.util.*
@@ -78,12 +79,12 @@ class WebSocketTest {
                 assertTrue { parser.mask }
                 val key = parser.maskKey!!
 
-                val collector = SimpleFrameCollector()
-                collector.start(parser.length.toInt(), bb)
+                SimpleFrameCollector(NoPool).use { collector ->
+                    collector.start(parser.length.toInt(), bb)
 
-                assertFalse { collector.hasRemaining }
-
-                assertEquals("Hello", collector.take(key).copy().array().toString(Charsets.UTF_8))
+                    assertFalse { collector.hasRemaining }
+                    assertEquals("Hello", collector.take(key).buffer.copy().array().toString(Charsets.UTF_8))
+                }
             }
         }
     }

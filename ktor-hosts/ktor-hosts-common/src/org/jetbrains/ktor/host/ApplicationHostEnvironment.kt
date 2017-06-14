@@ -1,6 +1,7 @@
 package org.jetbrains.ktor.host
 
 import org.jetbrains.ktor.application.*
+import org.jetbrains.ktor.cio.*
 import org.jetbrains.ktor.config.*
 import org.jetbrains.ktor.logging.*
 
@@ -19,6 +20,11 @@ interface ApplicationHostEnvironment : ApplicationEnvironment {
      * Throws an exception if environment has not been started
      */
     val application: Application
+
+    /**
+     * Custom byte buffer pool to override host's or null if host's pool is used
+     */
+    val pool: ByteBufferPool?
 
     /**
      * Starts [ApplicationHostEnvironment] and creates an application
@@ -46,6 +52,7 @@ class ApplicationHostEnvironmentBuilder {
 
     val connectors = mutableListOf<HostConnectorConfig>()
     val modules = mutableListOf<Application.() -> Unit>()
+    var pool: ByteBufferPool? = null
 
     fun module(body: Application.() -> Unit) {
         modules.add(body)
@@ -53,6 +60,6 @@ class ApplicationHostEnvironmentBuilder {
 
     fun build(builder: ApplicationHostEnvironmentBuilder.() -> Unit): ApplicationHostEnvironment {
         builder(this)
-        return ApplicationHostEnvironmentReloading(classLoader, log, config, connectors, modules, reloadPackages)
+        return ApplicationHostEnvironmentReloading(classLoader, log, config, connectors, modules, reloadPackages, pool)
     }
 }

@@ -6,9 +6,10 @@ import io.netty.handler.codec.http.HttpResponseStatus.*
 import io.netty.handler.codec.http.HttpVersion.*
 import kotlinx.coroutines.experimental.*
 import io.netty.util.*
+import org.jetbrains.ktor.cio.*
 
 @ChannelHandler.Sharable
-internal class NettyHostHttp1Handler(private val host: NettyApplicationHost) : SimpleChannelInboundHandler<HttpRequest>(false) {
+internal class NettyHostHttp1Handler(private val host: NettyApplicationHost, val pool: ByteBufferPool) : SimpleChannelInboundHandler<HttpRequest>(false) {
     override fun channelRead0(context: ChannelHandlerContext, message: HttpRequest) {
         if (HttpUtil.is100ContinueExpected(message)) {
             context.write(DefaultFullHttpResponse(HTTP_1_1, CONTINUE));
@@ -22,7 +23,7 @@ internal class NettyHostHttp1Handler(private val host: NettyApplicationHost) : S
             queue.push(message, message is LastHttpContent)
         }
 
-        val call = NettyApplicationCall(host.application, context, message, queue, context.executor().asCoroutineDispatcher())
+        val call = NettyApplicationCall(host.application, context, message, queue, context.executor().asCoroutineDispatcher(), pool)
         context.channel().attr(ResponseQueueKey).get().started(call)
         context.fireChannelRead(call)
     }

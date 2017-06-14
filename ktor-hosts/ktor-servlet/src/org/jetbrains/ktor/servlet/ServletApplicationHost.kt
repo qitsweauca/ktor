@@ -2,6 +2,7 @@ package org.jetbrains.ktor.servlet
 
 import com.typesafe.config.*
 import org.jetbrains.ktor.application.*
+import org.jetbrains.ktor.cio.*
 import org.jetbrains.ktor.config.*
 import org.jetbrains.ktor.host.*
 import org.jetbrains.ktor.logging.*
@@ -44,6 +45,7 @@ open class ServletApplicationHost : KtorServlet() {
 
     override val application: Application get() = environment.application
     override val hostPipeline by lazy { defaultHostPipeline(environment) }
+    override val pool: ByteBufferPool get() = NoPool
 
     override fun init() {
         environment.start()

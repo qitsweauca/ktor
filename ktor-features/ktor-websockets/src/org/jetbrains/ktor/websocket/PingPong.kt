@@ -16,6 +16,7 @@ fun ponger(ctx: CoroutineContext, ws: WebSocketSession, pool: ByteBufferPool): A
     return actor(ctx, 5, CoroutineStart.LAZY) {
         consumeEach { frame ->
             val message = frame.buffer.copy(pool)
+            frame.release()
             ws.send(Frame.Pong(message.buffer, object : DisposableHandle {
                 override fun dispose() {
                     pool.release(message)
@@ -38,7 +39,7 @@ fun pinger(ctx: CoroutineContext, ws: WebSocketSession, period: Duration, timeou
                 // here timeout is expected so ignore it
                 withTimeoutOrNull(periodMillis, TimeUnit.MILLISECONDS) {
                     while (true) {
-                        receive() // timeout causes loop to break on receive
+                        receive().release() // timeout causes loop to break on receive
                     }
                 }
 
@@ -50,7 +51,9 @@ fun pinger(ctx: CoroutineContext, ws: WebSocketSession, period: Duration, timeou
                     // wait for valid pong message
                     while (true) {
                         val msg = receive()
-                        if (msg.buffer.getString(Charsets.ISO_8859_1) == pingMessage) break
+                        val text = msg.buffer.getString(Charsets.ISO_8859_1)
+                        msg.release()
+                        if (text == pingMessage) break
                     }
                 }
 
